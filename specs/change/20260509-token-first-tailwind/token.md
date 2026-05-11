@@ -2,7 +2,7 @@
 
 ## Decision
 
-Open Design owns the Tailwind color, radius, and shadow vocabulary. Tailwind v4 is configured with CSS-first `@theme`, clears the default color namespace with `--color-*: initial`, and exposes project tokens backed by `apps/web/src/index.css` CSS variables.
+Open Design owns the Tailwind color, radius, shadow, and font vocabulary. Tailwind v4 is configured with CSS-first `@theme`, clears the default color namespace with `--color-*: initial`, and exposes project tokens backed by `apps/web/src/index.css` CSS variables.
 
 The runtime source of truth stays in `:root`, `[data-theme="dark"]`, and system-mode CSS variable overrides. Tailwind utilities resolve through those variables, so light mode, dark mode, system mode, and custom accent all share one token path.
 
@@ -15,20 +15,20 @@ Token names follow the current product language in `index.css` for core surfaces
 - Border tokens keep the `border-*` scale: `border`, `border-strong`, `border-soft`.
 - Accent tokens keep the `accent-*` scale because user custom accent writes the same CSS variables at runtime.
 - Status tokens use semantic names in Tailwind: `success`, `info`, `discovery`, `danger`, `warning`.
-- Tailwind utility names should read as project concepts: `bg-panel`, `text-muted`, `border-border-strong`, `text-danger`, `bg-success-surface`, `bg-selection-overlay`, `rounded-card`, and `shadow-token-sm`.
-- Radius and shadow utilities use project theme aliases backed by `--radius*` and `--shadow*`; font and spacing use Tailwind's native utilities such as `font-mono` and `gap-3`. Typography generally uses the native Tailwind scale, with exact project aliases for existing 13px and 13.5px UI where visual parity requires those sizes.
+- Tailwind utility names should read as project concepts: `bg-panel`, `text-muted`, `border-border-strong`, `text-danger`, `bg-success-surface`, `bg-selection-overlay`, `rounded-card`, `shadow-token-sm`, and `font-mono`.
+- Radius, shadow, and font utilities use project theme aliases backed by `--radius*`, `--shadow*`, `--sans`, `--serif`, and `--mono`; spacing uses Tailwind's native utilities such as `gap-3`. Typography generally uses the native Tailwind scale, with exact project aliases for existing 13px and 13.5px UI where visual parity requires those sizes.
 
-## Design decision: token-backed color, radius, and shadow
+## Design decision: token-backed color, radius, shadow, and font
 
-Project-owned tokens cover colors, radius, and shadow because color carries Open Design's brand and theme behavior, while existing cards, popovers, modals, inputs, and controls depend on project radius and shadow variables for visual stability.
+Project-owned tokens cover colors, radius, shadow, and font because color carries Open Design's brand and theme behavior, while existing cards, popovers, modals, inputs, controls, editorial moments, and code/file-path text depend on project variables for visual stability.
 
-Radius and shadow aliases resolve to the current CSS variables, including dark-theme shadow overrides. Font and spacing use Tailwind's native system to keep TSX class names familiar during migration; type uses native utilities plus exact `text-ui-13` and `text-ui-13_5` aliases for existing 13px and 13.5px component copy:
+Radius, shadow, and font aliases resolve to the current CSS variables, including dark-theme shadow overrides and custom `--serif` / `--mono` stacks. Spacing uses Tailwind's native system to keep TSX class names familiar during migration; type uses native utilities plus exact `text-ui-13` and `text-ui-13_5` aliases for existing 13px and 13.5px component copy:
 
 ```tsx
 className="rounded-card shadow-token-sm font-mono bg-panel text-text border border-border"
 ```
 
-Global base styles in `index.css` continue to set the app-level font family, page background, and text color. Component-level font changes can use native Tailwind utilities.
+Global base styles in `index.css` continue to set the app-level font family, page background, and text color. Component-level font changes can use Tailwind font utilities because `font-sans`, `font-serif`, and `font-mono` resolve to the existing project stacks.
 
 ## Required `index.css` source variables
 
@@ -123,6 +123,11 @@ The blue selection/inspect values are product interaction tokens for preview ann
   --shadow-token-md: var(--shadow-md);
   --shadow-token-lg: var(--shadow-lg);
 
+  /* Fonts */
+  --font-sans: var(--sans);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+
   /* Exact existing UI type sizes */
   --text-ui-13: 13px;
   --text-ui-13_5: 13.5px;
@@ -216,11 +221,11 @@ The blue selection/inspect values are product interaction tokens for preview ann
 | `--radius-pill` | Expose as `--radius-token-pill`. | `rounded-token-pill` | Pills, badges, segmented controls. |
 | `--shadow-xs`, `--shadow-sm`, `--shadow-md`, `--shadow-lg` | Expose as `--shadow-token-xs`, `--shadow-token-sm`, `--shadow-token-md`, and `--shadow-token-lg`. | `shadow-token-xs`, `shadow-token-sm`, `shadow-token-md`, `shadow-token-lg` | Subtle controls, selected cards, popovers, modals, including dark-theme overrides. |
 
-### Native Tailwind primitives
+### Font and native Tailwind primitives
 
 | Existing CSS variable | Tailwind behavior | Utility examples | Intended use |
 | --- | --- | --- | --- |
-| `--sans`, `--serif`, `--mono` | Keep as CSS variables for base/global CSS. Use Tailwind native font utilities in migrated TSX. | `font-sans`, `font-serif`, `font-mono` | UI text, editorial moments, code/file paths. |
+| `--sans`, `--serif`, `--mono` | Expose as Tailwind font theme aliases while retaining the same CSS variables for base/global CSS. | `font-sans`, `font-serif`, `font-mono` | UI text, editorial moments, code/file paths. |
 | Existing 13px / 13.5px component text | Use exact project text-size aliases where native `text-xs` or `text-sm` would create visible drift. | `text-ui-13`, `text-ui-13_5` | Compact labels, metadata, and controls currently sized at 13px or 13.5px in `index.css`. |
 
 ## Utility vocabulary
@@ -236,16 +241,17 @@ Use this vocabulary for TSX migrations.
 - Status: `text-success`, `bg-success-surface`, `border-success-border`, `text-info`, `bg-info-surface`, `border-info-border`, `text-discovery`, `bg-discovery-surface`, `border-discovery-border`, `text-danger`, `bg-danger-surface`, `border-danger-border`, `text-warning`, `bg-warning-surface`, `border-warning-border`.
 - Interaction: `outline-focus`, `ring-focus`, `ring-focus-ring`, `bg-overlay`, `bg-selection-overlay`, `border-selection-outline`, `ring-selection-outline`, `bg-inspect-overlay`, `bg-control-hover`, `bg-control-active`.
 
-### Radius and shadow utilities
+### Radius, shadow, and font utilities
 
 - Radius: `rounded-control`, `rounded-card`, `rounded-panel`, `rounded-token-pill`.
 - Shadows: `shadow-token-xs`, `shadow-token-sm`, `shadow-token-md`, `shadow-token-lg`.
+- Fonts: `font-sans`, `font-serif`, `font-mono` resolve to `--sans`, `--serif`, and `--mono`.
 
 ### Utility examples
 
 - Radius: `rounded-control`, `rounded-card`, `rounded-panel`, `rounded-token-pill`.
 - Shadows: `shadow-token-xs`, `shadow-token-sm`, `shadow-token-md`, `shadow-token-lg`.
-- Fonts: `font-sans`, `font-serif`, `font-mono`.
+- Fonts: `font-sans`, `font-serif`, `font-mono` for project-backed sans, serif, and monospace stacks.
 - Type: native Tailwind type utilities for standard sizes, plus `text-ui-13` and `text-ui-13_5` when matching existing 13px or 13.5px UI exactly.
 
 ## Migration rules
@@ -255,13 +261,14 @@ Use this vocabulary for TSX migrations.
 3. Use status names in TSX. Examples: `text-danger`, `bg-success-surface`, `border-info-border`.
 4. Use project-backed radius and shadow utilities for migrated components that currently depend on `--radius*` or `--shadow*`; examples include `rounded-card`, `rounded-panel`, `shadow-token-sm`, and `shadow-token-md`.
 5. Use exact type aliases `text-ui-13` and `text-ui-13_5`, or inherited type size when the parent already supplies the exact current size, for migrated component text currently defined as 13px or 13.5px in `index.css`.
-6. Use complete static class maps for dynamic variants. Avoid fragment interpolation such as `bg-${status}-surface`; prefer maps such as `{ success: 'bg-success-surface text-success', danger: 'bg-danger-surface text-danger' }`. Add an explicit safelist only when runtime-generated classes are required.
-7. Use `selection`/`inspect` tokens for preview annotation overlays in app UI and edit-mode integration. Keep file color conversion helpers allowlisted only when they transport user-authored colors.
-8. Keep brand assets, SVG illustration colors, sketch/canvas user colors, and file color conversion helpers as documented exceptions.
-9. Add one color token before repeating the same arbitrary color value in multiple components.
-10. Keep complex one-off gradients and `color-mix()` expressions local during migration only when they encode component-specific art direction; promote repeated patterns into the interaction/status tokens above.
-11. Treat CSS-wide/special keywords such as `transparent`, `currentColor` / `currentcolor`, `inherit`, `initial`, `unset`, and `revert` as non-token color semantics for transparent fills, SVG/current-color inheritance, and reset/inherit states. The guard should exempt these keywords while still rejecting real unapproved named colors in app UI chrome.
-12. Add style guard fixtures for the keyword exemptions and for at least one rejected real named color so the guard distinguishes CSS semantics from unapproved palette names.
+6. Use `font-sans`, `font-serif`, and `font-mono` only after the Tailwind font theme aliases point to `var(--sans)`, `var(--serif)`, and `var(--mono)`; migrated editorial and code/file-path text must preserve the current project stacks.
+7. Use complete static class maps for dynamic variants. Avoid fragment interpolation such as `bg-${status}-surface`; prefer maps such as `{ success: 'bg-success-surface text-success', danger: 'bg-danger-surface text-danger' }`. Add an explicit safelist only when runtime-generated classes are required.
+8. Use `selection`/`inspect` tokens for preview annotation overlays in app UI and edit-mode integration. Keep file color conversion helpers allowlisted only when they transport user-authored colors.
+9. Keep brand assets, SVG illustration colors, sketch/canvas user colors, and file color conversion helpers as documented exceptions.
+10. Add one color token before repeating the same arbitrary color value in multiple components.
+11. Keep complex one-off gradients and `color-mix()` expressions local during migration only when they encode component-specific art direction; promote repeated patterns into the interaction/status tokens above.
+12. Treat CSS-wide/special keywords such as `transparent`, `currentColor` / `currentcolor`, `inherit`, `initial`, `unset`, and `revert` as non-token color semantics for transparent fills, SVG/current-color inheritance, and reset/inherit states. The guard should exempt these keywords while still rejecting real unapproved named colors in app UI chrome.
+13. Add style guard fixtures for the keyword exemptions and for at least one rejected real named color so the guard distinguishes CSS semantics from unapproved palette names.
 
 ## Existing conflicts and exception handling
 

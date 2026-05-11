@@ -98,7 +98,7 @@ created: '2026-05-09'
 - `AGENTS.md:40-45,82-89,91-104` - tools-dev local lifecycle, web/daemon ports, and validation command boundaries.
 - `scripts/guard.ts:138-151,205-221,328-350,401-422` - existing guard shape and failure behavior.
 - `apps/AGENTS.md:19-24,39-51` - app test/layout and validation boundaries.
-- `specs/change/20260509-token-first-tailwind/token.md` - Tailwind color/radius/shadow token vocabulary, existing CSS variable mapping, native font/spacing/type decision, and guardrail target.
+- `specs/change/20260509-token-first-tailwind/token.md` - Tailwind color/radius/shadow/font token vocabulary, existing CSS variable mapping, native spacing/type decision, and guardrail target.
 - `https://tailwindcss.com/docs/guides/nextjs` - Tailwind v4 Next.js setup.
 - `https://tailwindcss.com/docs/theme` - Tailwind v4 CSS-first theme variables and namespaces.
 
@@ -109,7 +109,7 @@ created: '2026-05-09'
 - Scope: `apps/web` style toolchain. Impact: add Tailwind v4/PostCSS dependencies and config at the web package boundary because `@open-design/web` owns `dev/build/typecheck/test` scripts and currently declares no Tailwind/PostCSS dependencies. Source: `apps/web/package.json:23-50`; `https://tailwindcss.com/docs/guides/nextjs`
 - Scope: `apps/web/src/index.css`. Impact: keep CSS variables, dark/system theme overrides, reset, body styles, loading shell, keyframes, and truly global content styles; add Tailwind import/theme layers in the same entry so the existing `layout.tsx` import remains the only global CSS entry, and remove component-level global classes that have moved to TSX. Source: `apps/web/app/layout.tsx:1-4`; `apps/web/src/index.css:6-181,1121-1143,6219-6299`
 - Scope: existing `apps/web/src/**/*.tsx`. Impact: migrate replaceable global CSS classes to token-first Tailwind `className` values by page/component area while keeping DOM structure and component responsibilities stable. Source: `apps/web/src/index.css:183-219`; `apps/web/src/**/*.tsx`
-- Scope: token mapping. Impact: expose existing color, radius, and shadow CSS variables as Tailwind theme variables while preserving runtime custom accent behavior that writes to the same `--accent*` variables; use native Tailwind utilities for font, spacing, and font size. Source: `apps/web/src/index.css:6-63`; `apps/web/src/state/appearance.ts:17-52`; `apps/web/app/layout.tsx:21-29`; `specs/change/20260509-token-first-tailwind/token.md`; `https://tailwindcss.com/docs/theme`
+- Scope: token mapping. Impact: expose existing color, radius, shadow, and font CSS variables as Tailwind theme variables while preserving runtime custom accent behavior that writes to the same `--accent*` variables; use native Tailwind utilities for spacing and font size. Source: `apps/web/src/index.css:6-63`; `apps/web/src/state/appearance.ts:17-52`; `apps/web/app/layout.tsx:21-29`; `specs/change/20260509-token-first-tailwind/token.md`; `https://tailwindcss.com/docs/theme`
 - Scope: constraints. Impact: extend the repository guard to explicitly check default Tailwind palette classes and uncontrolled hardcoded colors, with allowlists for brand/user-content scenarios. Source: `scripts/guard.ts:138-151,205-221`; `apps/web/src/components/AgentIcon.tsx:46-99`; `apps/web/src/components/SketchEditor.tsx:72,144-149`; `apps/web/src/components/FileViewer.tsx:1448-1474`
 - Scope: testing and validation. Impact: web-owned tests live in `apps/web/tests/`; validate through `pnpm guard`, `pnpm typecheck`, `pnpm --filter @open-design/web test`, and `pnpm --filter @open-design/web build`. Source: `apps/AGENTS.md:19-24,39-51`; `AGENTS.md#Validation strategy`
 - Scope: agent visual consistency validation. Impact: each development slice uses a baseline worktree and development worktree, each running its own web/daemon pair; the agent compares the same scenarios across both services through the agent-browser CLI and Chrome DevTools MCP, using screenshots as the primary comparison record and component source inspection as auxiliary evidence, to validate consistent frontend display before and after the refactor. Source: `AGENTS.md:40-45,82-89,91-104`; `apps/web/src/index.css:65-157`; `apps/web/src/state/appearance.ts:28-52`
@@ -124,7 +124,7 @@ created: '2026-05-09'
 - Decision: `index.css` continues to own token definitions, reset, base element behavior, loading shell, keyframes, and cross-content-area styles; this change preserves existing component abstractions and migrates all replaceable component-level global classes in existing TSX to token-first Tailwind classes. Source: `apps/web/src/index.css:160-219,1121-1143,6219-6299`; `apps/web/app/[[...slug]]/client-app.tsx:5-13`
 - Decision: add project-owned style constraint checks inside `scripts/guard.ts`, reusing the existing guard aggregation model and root command boundary. Source: `scripts/guard.ts:138-151,205-221,401-422`; `AGENTS.md#Root command boundary`
 - Decision: allow explicit exceptions for brand assets, SVG illustrations, canvas/user content colors, and color conversion helpers; app UI chrome uses token classes or CSS variables. Source: `apps/web/src/components/AgentIcon.tsx:46-99`; `apps/web/src/components/SketchEditor.tsx:72,144-149`; `apps/web/src/components/FileViewer.tsx:1448-1474`
-- Decision: project custom Tailwind tokens cover color, radius, and shadow; radius/shadow utilities resolve to existing CSS variables so cards, popovers, modals, inputs, buttons, and dark-theme shadow overrides keep their current visuals; font, spacing, and typography scale use native Tailwind utilities. Source: `specs/change/20260509-token-first-tailwind/token.md`
+- Decision: project custom Tailwind tokens cover color, radius, shadow, and font; radius/shadow/font utilities resolve to existing CSS variables so cards, popovers, modals, inputs, buttons, dark-theme shadow overrides, editorial typography, and code/file-path text keep their current visuals; spacing and typography scale use native Tailwind utilities, with exact text-size aliases for current 13px and 13.5px UI. Source: `specs/change/20260509-token-first-tailwind/token.md`
 - Decision: after dependency or config-related package changes, run `pnpm install`, then run package-scoped web validation and repo checks. Source: `AGENTS.md#Validation strategy`; `apps/web/package.json:23-29`
 - Decision: migration acceptance uses dual-worktree agent comparison. Every migration PR runs independent web/daemon pairs for the baseline and development worktrees, and the agent checks visual consistency for the same scenarios across both services. Screenshot comparison is the required primary artifact; component source inspection supports diagnosis and traceability for migrated styles. Display drift is fixed or recorded as an approved deviation. Source: `AGENTS.md:40-45,82-89,91-104`; `apps/web/src/index.css:65-157`; `apps/web/src/state/appearance.ts:28-52`
 
@@ -150,11 +150,11 @@ created: '2026-05-09'
 - `apps/web/package.json` - add Tailwind/PostCSS dependencies at the web package boundary.
 - `apps/web/postcss.config.mjs` - configure the Tailwind v4 PostCSS plugin; this file needs an exact-path allowlist entry in the residual JavaScript guard because the PostCSS config loader consumes a `.mjs` config entry.
 - `apps/web/src/index.css` - retain global tokens/base styles and add Tailwind import/theme aliases.
-- `specs/change/20260509-token-first-tailwind/token.md` - record Tailwind color/radius/shadow token naming, mapping to existing CSS variables, and the design decision to use native Tailwind utilities for font/spacing/type.
+- `specs/change/20260509-token-first-tailwind/token.md` - record Tailwind color/radius/shadow/font token naming, mapping to existing CSS variables, and the design decision to use native Tailwind utilities for spacing/type.
 - `apps/web/src/**/*.tsx` - fully replace migratable global CSS classes with token-first Tailwind classes.
 - `scripts/guard.ts` - add the PostCSS config residual JavaScript allowlist and style policy checks to the existing repo guard.
 - `apps/web/tests/` - add focused tests when extracting style policy helpers.
-- `phase*-notes.md` - each PR slice records dual-worktree service URLs, agent comparison coverage scenarios, discovered visual drift, and approved deviations.
+- `phase*-notes.md` - each PR slice records commands/results, screenshot artifact links or paths, exact dual-worktree startup parameters or full commands, service URLs, namespace names, agent comparison coverage scenarios, discovered visual drift, and approved deviations.
 
 ### Edge Cases
 
@@ -200,7 +200,7 @@ Goal: add Tailwind v4 infrastructure, expose Open Design tokens as Tailwind util
   - [ ] Substep 1.6 Verify: Run `pnpm guard` and confirm the PostCSS config allowlist works.
   - [ ] Substep 1.7 Verify: Run `pnpm --filter @open-design/web build`.
 - [ ] Step 2: Expose Open Design tokens as Tailwind utilities
-  - [ ] Substep 2.1 Implement: Add CSS-first `@theme` aliases for colors, core semantic status, selection/inspect overlays, radius, and shadow tokens; use native Tailwind utilities for font, spacing, and typography scale.
+  - [ ] Substep 2.1 Implement: Add CSS-first `@theme` aliases for colors, core semantic status, selection/inspect overlays, radius, shadow, and font tokens; use native Tailwind utilities for spacing and typography scale.
   - [ ] Substep 2.2 Implement: Clear default Tailwind colors and declare the project-approved color namespace.
   - [ ] Substep 2.3 Implement: Document the token class vocabulary near the theme block.
   - [ ] Substep 2.4 Verify: Confirm light, dark, system, and custom accent modes all resolve through the same CSS variables.
