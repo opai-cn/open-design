@@ -489,7 +489,7 @@ export function DesignsTab({
 											src={liveArtifactPreviewUrl(p.id, artifact.id)}
 											title=""
 											loading="lazy"
-											sandbox="allow-scripts allow-same-origin"
+											sandbox="allow-scripts"
 											tabIndex={-1}
 										/>
 									</div>
@@ -616,7 +616,7 @@ export function DesignsTab({
 											src={cover.src}
 											title=""
 											loading="lazy"
-											sandbox="allow-scripts allow-same-origin"
+											sandbox="allow-scripts"
 											tabIndex={-1}
 										/>
 									) : (
