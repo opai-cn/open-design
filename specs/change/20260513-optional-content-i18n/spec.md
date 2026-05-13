@@ -168,7 +168,7 @@ Flow:
 
 ### Implementation
 
-- `e2e/tests/localized-content.test.ts` - removed the full coverage gate that compared discovered category / tag values against `LOCALIZED_CONTENT_IDS`, kept the real-resource displayability smoke test, and added direct assertions that prompt-template category / tag values fall back to source values when dictionary entries are missing.
+- `e2e/tests/localized-content.test.ts` - removed the full coverage gate that compared discovered category / tag values against `LOCALIZED_CONTENT_IDS`, kept the real-resource displayability smoke test, and added direct assertions that design-system category plus prompt-template category / tag values fall back to source values when dictionary entries are missing.
 - `apps/web/tests/i18n/content.test.ts` - strengthened the unit assertion for fallback behavior when a prompt-template category is unknown.
 - `docs/skills-contributing.md` - changed localized display copy into an optional enhancement path for featured skills, and clarified that tests focus on displayable resources and fallback behavior.
 - `docs/testing/e2e-coverage/settings.md` - rewrote SET-043 / SET-044 as fallback display integrity and optional translation behavior coverage.

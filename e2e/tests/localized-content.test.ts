@@ -11,6 +11,7 @@ declare global {
 }
 
 type LocalizedContentModule = {
+  localizeDesignSystemCategory: (locale: string, category: string) => string;
   localizeDesignSystemSummary: (locale: string, system: DesignSystemResource) => string;
   localizePromptTemplateSummary: (
     locale: string,
@@ -34,8 +35,12 @@ if (localizedContentModule == null) {
   throw new Error('Failed to load apps/web localized content ids');
 }
 
-const { localizeDesignSystemSummary, localizePromptTemplateSummary, localizeSkillDescription } =
-  localizedContentModule;
+const {
+  localizeDesignSystemCategory,
+  localizeDesignSystemSummary,
+  localizePromptTemplateSummary,
+  localizeSkillDescription,
+} = localizedContentModule;
 const COVERAGE_LOCALES = ['de', 'fr', 'ru'] as const;
 const RESOURCE_ID_PATTERN = /^[a-z0-9][a-z0-9-]*$/;
 
@@ -364,7 +369,7 @@ describe('localized display content coverage', () => {
   });
 
   for (const locale of COVERAGE_LOCALES) {
-    it(`falls back to source prompt-template category and tags for ${locale} when dictionary entries are missing`, () => {
+    it(`falls back to source design-system and prompt-template metadata for ${locale} when dictionary entries are missing`, () => {
       const localized = localizePromptTemplateSummary(locale, {
         id: 'missing-template-translation',
         category: 'Untranslated Category',
@@ -373,12 +378,15 @@ describe('localized display content coverage', () => {
         summary: ' English summary from source ',
       });
 
+      expect(localizeDesignSystemCategory(locale, 'Untranslated Category')).toBe(
+        'Untranslated Category',
+      );
       expect(localized.title).toBe(' English title from source ');
       expect(localized.summary).toBe(' English summary from source ');
       expect(localized.category).toBe('Untranslated Category');
       expect(localized.tags[0]).toBe('untranslated-tag');
       expect(normalizeText(localized.tags[1] ?? ''), `${locale} should still localize known tags`).not.toEqual(
-        '',
+        '3d',
       );
     });
   }
