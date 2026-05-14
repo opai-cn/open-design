@@ -29,6 +29,11 @@ import {
 import { createCommandInvocation } from '@open-design/platform';
 import { diagnoseClaudeCliFailure } from './claude-diagnostics.js';
 import { agentCliEnvForAgent, validateAgentCliEnv } from './app-config.js';
+import {
+  classifyAgentAuthFailure,
+  cursorAuthGuidance,
+  probeAgentAuthStatus,
+} from './runtimes/auth.js';
 import type { AgentCliEnvPrefs } from './app-config.js';
 import { createRuntimeAdapter } from './runtimes/runtime-adapter.js';
 import type { RuntimeAgentDef } from './runtimes/types.js';
@@ -1021,6 +1026,18 @@ async function testAgentConnectionInternal(
     const detail = redactSecrets(
       error instanceof Error ? error.message : String(error),
     );
+    const auth = classifyAgentAuthFailure(input.agentId, detail);
+    if (auth?.status === 'missing') {
+      console.warn(`[test:agent] ${def.name} → auth_required: ${detail}`);
+      return {
+        ok: false,
+        kind: 'agent_auth_required',
+        latencyMs,
+        model,
+        agentName: def.name,
+        detail: auth.message ?? cursorAuthGuidance(),
+      };
+    }
     if (detail && isLikelyModelErrorText(detail)) {
       console.warn(
         `[test:agent] ${def.name} → not_found_model: ${detail}`,
@@ -1083,14 +1100,26 @@ async function testAgentConnectionInternal(
       };
     }
     const stdinMode = runtimeAdapter.stdinMode();
-    const env = applyAgentLaunchEnv(spawnEnvForAgent(
+    const baseEnv = spawnEnvForAgent(
       input.agentId,
       {
         ...process.env,
         ...(def.env || {}),
       },
       configuredAgentEnv,
-    ), executableResolution);
+    );
+    const env = applyAgentLaunchEnv(baseEnv, executableResolution);
+    const auth = await probeAgentAuthStatus(input.agentId, executableResolution.launchPath, env);
+    if (auth?.status === 'missing') {
+      return {
+        ok: false,
+        kind: 'agent_auth_required',
+        latencyMs: Date.now() - start,
+        model,
+        agentName: def.name,
+        detail: auth.message ?? cursorAuthGuidance(),
+      };
+    }
     const invocation = createCommandInvocation({
       command: executableResolution.launchPath,
       args,
@@ -1186,6 +1215,28 @@ async function testAgentConnectionInternal(
       const stderrTail = sink.getStderrTail().trim();
       const rawStdoutTail = sink.getRawStdoutTail().trim();
       const acpFatal = Boolean(acpSession?.hasFatalError?.());
+      const rawDetail = [
+        winner.code != null ? `exit ${winner.code}` : null,
+        winner.signal ? `signal ${winner.signal}` : null,
+        stderrTail ? `stderr: ${stderrTail.slice(-200)}` : null,
+        rawStdoutTail || buffered
+          ? `stdout: ${(rawStdoutTail || buffered).slice(-200)}`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      const auth = classifyAgentAuthFailure(input.agentId, rawDetail);
+      if (auth?.status === 'missing') {
+        console.warn(`[test:agent] ${def.name} → auth_required: ${redactSecrets(rawDetail)}`);
+        return {
+          ok: false,
+          kind: 'agent_auth_required',
+          latencyMs,
+          model,
+          agentName: def.name,
+          detail: auth.message ?? cursorAuthGuidance(),
+        };
+      }
       const claudeDiagnostic = diagnoseClaudeCliFailure({
         agentId: input.agentId,
         exitCode: winner.code,
@@ -1208,14 +1259,7 @@ async function testAgentConnectionInternal(
         };
       }
       const detail = redactSecrets(
-        [
-          winner.code != null ? `exit ${winner.code}` : null,
-          winner.signal ? `signal ${winner.signal}` : null,
-          stderrTail ? `stderr: ${stderrTail.slice(-200)}` : null,
-          buffered ? `stdout: ${buffered.slice(-200)}` : null,
-        ]
-          .filter(Boolean)
-          .join(' · '),
+        rawDetail,
       );
       const guidance = redactSecrets(
         `${codexExecutableGuidance(
