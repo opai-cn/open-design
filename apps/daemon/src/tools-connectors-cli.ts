@@ -1239,6 +1239,13 @@ async function materializePackageEvidenceArtifacts(files: GithubSnapshotFile[]):
       materialized.push(target);
     }
   }
+  for (const file of packageFontAssetCandidates(files)) {
+    const target = packageFontAssetTarget(file.repoPath);
+    if (target === undefined) continue;
+    if (await writePackageFileIfMissing(target, file.content, file.binary === true)) {
+      materialized.push(target);
+    }
+  }
   for (const file of packageSourceExampleCandidates(files)) {
     const safeRelativePath = safeRepoRelativePath(file.repoPath);
     if (!safeRelativePath) continue;
@@ -1268,6 +1275,34 @@ function packageBuildAssetTarget(repoPath: string): string | undefined {
     : buildIndex;
   if (assetRootIndex === -1 || assetRootIndex === parts.length - 1) return undefined;
   return path.join('build', ...parts.slice(assetRootIndex + 1)).split(path.sep).join('/');
+}
+
+function packageFontAssetCandidates(files: GithubSnapshotFile[]): GithubSnapshotFile[] {
+  return files
+    .filter((file) => packageFontAssetTarget(file.repoPath) !== undefined)
+    .slice(0, 8);
+}
+
+function packageFontAssetTarget(repoPath: string): string | undefined {
+  const safeRelativePath = safeRepoRelativePath(repoPath);
+  if (!safeRelativePath) return undefined;
+  const isFontBinary = /\.(ttf|otf|woff2?)$/iu.test(safeRelativePath);
+  const isFontStylesheet = /(^|\/)(fonts?|assets\/fonts?|public\/fonts?|resources\/fonts?)\//iu.test(safeRelativePath)
+    && /\.css$/iu.test(safeRelativePath);
+  if (!isFontBinary && !isFontStylesheet) return undefined;
+  const parts = safeRelativePath.split('/');
+  const fontRootIndex = parts.findIndex((part) => /^fonts?$/iu.test(part));
+  if (fontRootIndex !== -1 && fontRootIndex < parts.length - 1) {
+    return path.join('fonts', ...parts.slice(fontRootIndex + 1)).split(path.sep).join('/');
+  }
+  const assetFontIndex = parts.findIndex((part, index) =>
+    /^(assets?|public|resources)$/iu.test(part) && /^fonts?$/iu.test(parts[index + 1] ?? ''),
+  );
+  if (assetFontIndex !== -1 && assetFontIndex < parts.length - 2) {
+    return path.join('fonts', ...parts.slice(assetFontIndex + 2)).split(path.sep).join('/');
+  }
+  if (!isFontBinary) return undefined;
+  return path.join('fonts', path.basename(safeRelativePath)).split(path.sep).join('/');
 }
 
 function packageSourceExampleCandidates(files: GithubSnapshotFile[]): GithubSnapshotFile[] {
@@ -2022,6 +2057,17 @@ export async function auditDesignSystemPackage(
       'build/',
     );
   }
+  if (evidenceBuildAssetFiles.length > 0 && preservedBuildAssetFiles.length > 0) {
+    const sourceBackedBuildAssets = await sourceBackedBuildAssetFiles(projectPath, fileSet, evidenceBuildAssetFiles);
+    if (sourceBackedBuildAssets.length === 0) {
+      addIssue(
+        'warning',
+        'build_assets_not_source_backed',
+        `Root build/ contains preserved-looking runtime assets, but none match the captured build/resource snapshots byte-for-byte. Copy representative originals such as ${evidenceBuildAssetFiles.slice(0, 3).join(', ')} into build/ with original filenames instead of redrawing or re-encoding placeholders.`,
+        'build/',
+      );
+    }
+  }
   if (hasFontEvidence) {
     if (preservedFontFiles.length === 0) {
       addIssue('error', 'missing_preserved_fonts', 'Source evidence includes font files; preserve selected fonts under fonts/ and bind them in colors_and_type.css.', 'fonts/');
@@ -2074,6 +2120,38 @@ async function readAuditText(projectPath: string, relativePath: string): Promise
   } catch {
     return undefined;
   }
+}
+
+async function sourceBackedBuildAssetFiles(
+  projectPath: string,
+  fileSet: Set<string>,
+  evidenceBuildAssetFiles: string[],
+): Promise<string[]> {
+  const matchedFiles: string[] = [];
+  const seenTargets = new Set<string>();
+  for (const evidenceFilePath of evidenceBuildAssetFiles) {
+    if (!fileSet.has(evidenceFilePath)) continue;
+    const repoPath = repoPathFromEvidenceSnapshot(evidenceFilePath);
+    if (repoPath === undefined) continue;
+    const target = packageBuildAssetTarget(repoPath);
+    if (target === undefined || seenTargets.has(target) || !fileSet.has(target)) continue;
+    seenTargets.add(target);
+    try {
+      const [sourceBytes, targetBytes] = await Promise.all([
+        readFile(path.join(projectPath, evidenceFilePath)),
+        readFile(path.join(projectPath, target)),
+      ]);
+      if (sourceBytes.equals(targetBytes)) matchedFiles.push(target);
+    } catch {
+      // Missing or unreadable files are already covered by structural audit checks.
+    }
+  }
+  return matchedFiles;
+}
+
+function repoPathFromEvidenceSnapshot(filePath: string): string | undefined {
+  const match = /^context\/(?:github|local-code)\/[^/]+\/files\/(.+)$/u.exec(filePath);
+  return match?.[1];
 }
 
 async function totalAuditBytes(projectPath: string, relativePaths: string[]): Promise<number> {

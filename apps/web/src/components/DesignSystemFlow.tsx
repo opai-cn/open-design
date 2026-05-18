@@ -2908,7 +2908,7 @@ function githubConnectorStatusForManifest(options: {
     return 'GitHub connector is not configured; repository intake will use local git credentials or authenticated GitHub CLI when possible.';
   }
   if (isGithubConnectorConnected(options.githubConnector)) {
-    const account = options.githubConnector?.accountLabel?.trim();
+    const account = getDisplayableGithubAccountLabel(options.githubConnector);
     return account
       ? `connected as ${account}.`
       : 'connected.';

@@ -1529,4 +1529,75 @@ describe('DesignSystemCreationFlow', () => {
       expect.stringContaining('preview/brand-assets.html should visibly reference preserved files'),
     );
   });
+
+  it('does not leak Composio connected-account ids into the project source manifest', async () => {
+    const connectedConnector: ConnectorDetail = {
+      id: 'github',
+      name: 'GitHub',
+      provider: 'Composio',
+      category: 'Code',
+      status: 'connected',
+      accountLabel: 'ca_6U6mv_8IzMVR',
+      tools: [],
+    };
+    const system: DesignSystemDetail = {
+      id: 'user:github-internal-account-design-system',
+      title: 'GitHub Internal Account Design System',
+      category: 'Custom',
+      summary: 'GitHub-backed workspace.',
+      swatches: [],
+      surface: 'web',
+      body: '# GitHub Internal Account Design System\n',
+      source: 'user',
+      status: 'draft',
+      isEditable: true,
+      projectId: 'ds-github-internal-account-design-system',
+    };
+    const project: Project = {
+      id: 'ds-github-internal-account-design-system',
+      name: 'GitHub Internal Account Design System',
+      skillId: null,
+      designSystemId: system.id,
+      createdAt: 1,
+      updatedAt: 1,
+      metadata: {
+        kind: 'other',
+        importedFrom: 'design-system',
+        entryFile: 'DESIGN.md',
+        sourceFileName: system.id,
+      },
+    };
+    mocks.fetchConnectorDetail.mockResolvedValue(connectedConnector);
+    mocks.createDesignSystemDraft.mockResolvedValue(system);
+    mocks.ensureDesignSystemWorkspace.mockResolvedValue({ project, files: [] });
+    mocks.patchProject.mockResolvedValue({ ...project, pendingPrompt: 'Create this project as a design system.' });
+    const config = {
+      composio: { apiKeyConfigured: true, apiKeyTail: 'uQEg' },
+    } as AppConfig;
+
+    render(
+      <DesignSystemCreationFlow
+        onBack={() => {}}
+        onCreated={() => {}}
+        config={config}
+      />,
+    );
+
+    await waitFor(() => expect(screen.getByText('GitHub connected')).toBeTruthy());
+    fireEvent.change(screen.getByPlaceholderText(/Mission Impastabowl/i), {
+      target: { value: 'GitHub: product workspace' },
+    });
+    const input = screen.getByPlaceholderText('https://github.com/owner/repo') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'https://github.com/nexu-io/open-design' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    fireEvent.click(screen.getByText('Continue to generation'));
+    fireEvent.click(screen.getByText('Generate'));
+
+    await waitFor(() => expect(mocks.writeProjectTextFile).toHaveBeenCalled());
+    const sourceManifestCall = mocks.writeProjectTextFile.mock.calls.find(
+      (call) => call[0] === project.id && call[1] === 'context/source-context.md',
+    );
+    expect(sourceManifestCall?.[2]).toEqual(expect.stringContaining('Connector status: connected.'));
+    expect(sourceManifestCall?.[2]).not.toEqual(expect.stringContaining('ca_6U6mv_8IzMVR'));
+  });
 });
