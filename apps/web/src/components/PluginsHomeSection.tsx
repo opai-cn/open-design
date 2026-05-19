@@ -58,7 +58,14 @@ export function PluginsHomeSection({
   onBrowseRegistry,
   preferDefaultFacet = true,
   title = 'Official starters',
-  subtitle = 'Ready-to-use Open Design workflows bundled with this runtime. Pick one to load a starter prompt, or browse the registry for more.',
+  // The subtitle prop is retained for callers that pass an
+  // explicit description; the Home gallery default omits it
+  // because the section title + Browse registry link + card
+  // grid already make the strip's purpose self-evident, and
+  // the original sentence ("Ready-to-use Open Design workflows
+  // bundled with this runtime…") read as filler chrome above
+  // the chip strip rather than as actionable copy.
+  subtitle,
   emptyMessage = 'Catalog is empty. Bundled plugins ship with Open Design and should appear here automatically — try restarting the daemon if this persists.',
 }: Props) {
   const {
@@ -88,9 +95,9 @@ export function PluginsHomeSection({
       <header className="plugins-home__head">
         <div className="plugins-home__heading">
           <h2 className="plugins-home__title">{title}</h2>
-          <p className="plugins-home__subtitle">
-            {subtitle}
-          </p>
+          {subtitle ? (
+            <p className="plugins-home__subtitle">{subtitle}</p>
+          ) : null}
         </div>
         <div className="plugins-home__head-tools">
           {onBrowseRegistry ? (
