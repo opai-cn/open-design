@@ -18,6 +18,7 @@ import {
   SIDECAR_ENV,
   SIDECAR_MESSAGES,
   normalizeWebSidecarMessage,
+  type SidecarImplementationSnapshot,
   type SidecarStamp,
   type WebStatusSnapshot,
 } from "@open-design/sidecar-proto";
@@ -39,6 +40,7 @@ const WEB_PORT_ENV = SIDECAR_ENV.WEB_PORT;
 const TOOLS_DEV_PARENT_PID_ENV = SIDECAR_ENV.TOOLS_DEV_PARENT_PID;
 const WEB_OUTPUT_MODE_ENV = "OD_WEB_OUTPUT_MODE";
 const WEB_STANDALONE_ROOT_ENV = "OD_WEB_STANDALONE_ROOT";
+const SIDECAR_IMPLEMENTATION_ENV = "OD_SIDECAR_IMPLEMENTATION_JSON";
 const STANDALONE_PARENT_PID_ENV = "OD_STANDALONE_PARENT_PID";
 const STANDALONE_STARTUP_TIMEOUT_ENV = "OD_STANDALONE_STARTUP_TIMEOUT_MS";
 const SHUTDOWN_TIMEOUT_MS = 3000;
@@ -109,6 +111,64 @@ function parsePositiveIntegerEnv(envName: string, defaultValue: number): number 
 
 function resolveStandaloneStartupTimeoutMs(): number {
   return parsePositiveIntegerEnv(STANDALONE_STARTUP_TIMEOUT_ENV, 35_000);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringField(record: Record<string, unknown>, key: string): string | null {
+  const value = record[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function readSidecarImplementationEnv(): SidecarImplementationSnapshot | undefined {
+  const raw = process.env[SIDECAR_IMPLEMENTATION_ENV];
+  if (raw == null || raw.length === 0) return undefined;
+
+  try {
+    const value = JSON.parse(raw) as unknown;
+    if (!isRecord(value)) return undefined;
+    const source = stringField(value, "source");
+    if (source === "builtin") {
+      return {
+        source,
+        ...(stringField(value, "entryPath") == null ? {} : { entryPath: stringField(value, "entryPath") as string }),
+        ...(stringField(value, "fallbackReason") == null ? {} : { fallbackReason: stringField(value, "fallbackReason") as string }),
+      };
+    }
+    if (source === "bundle") {
+      const ref = value.ref;
+      if (!isRecord(ref)) return undefined;
+      const key = stringField(ref, "key");
+      const version = stringField(ref, "version");
+      const basePath = stringField(value, "basePath");
+      const bundlePath = stringField(value, "bundlePath");
+      const entryPath = stringField(value, "entryPath");
+      if (key == null || version == null || basePath == null || bundlePath == null || entryPath == null) return undefined;
+      return {
+        basePath,
+        bundlePath,
+        entryPath,
+        ref: { key, version },
+        source,
+        ...(stringField(value, "metadataPath") == null ? {} : { metadataPath: stringField(value, "metadataPath") as string }),
+      };
+    }
+    if (source === "explicitPath") {
+      const entryPath = stringField(value, "entryPath");
+      if (entryPath == null) return undefined;
+      return {
+        entryPath,
+        source,
+        ...(typeof value.persistent === "boolean" ? { persistent: value.persistent } : {}),
+      };
+    }
+  } catch {
+    return undefined;
+  }
+
+  return undefined;
 }
 
 export function createStandaloneParentMonitorImport(parentPidEnv = STANDALONE_PARENT_PID_ENV): string {
@@ -654,7 +714,9 @@ async function createWebSidecarHandle(
   isRuntimeRunning?: () => boolean,
 ): Promise<WebSidecarHandle> {
   const port = await listen(httpServer, parsePort(process.env[WEB_PORT_ENV]));
+  const implementation = readSidecarImplementationEnv();
   const state: WebStatusSnapshot = {
+    ...(implementation == null ? {} : { implementation }),
     pid: process.pid,
     state: "running",
     updatedAt: new Date().toISOString(),

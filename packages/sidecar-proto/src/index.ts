@@ -135,7 +135,33 @@ export class SidecarContractError extends Error {
 
 export type ServiceRuntimeState = "idle" | "running" | "starting" | "stopped" | "unknown";
 
+export type SidecarImplementationRef = {
+  key: string;
+  version: string;
+};
+
+export type SidecarImplementationSnapshot =
+  | {
+      entryPath?: string;
+      fallbackReason?: string;
+      source: "builtin";
+    }
+  | {
+      basePath: string;
+      bundlePath: string;
+      entryPath: string;
+      metadataPath?: string;
+      ref: SidecarImplementationRef;
+      source: "bundle";
+    }
+  | {
+      entryPath: string;
+      persistent?: boolean;
+      source: "explicitPath";
+    };
+
 export type DaemonStatusSnapshot = {
+  implementation?: SidecarImplementationSnapshot;
   pid?: number | null;
   state: ServiceRuntimeState;
   updatedAt?: string;
@@ -155,6 +181,7 @@ export type DaemonStatusSnapshot = {
 };
 
 export type WebStatusSnapshot = {
+  implementation?: SidecarImplementationSnapshot;
   pid?: number | null;
   state: ServiceRuntimeState;
   updatedAt?: string;

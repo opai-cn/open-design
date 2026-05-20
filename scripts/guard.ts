@@ -56,6 +56,7 @@ const residualAllowedExactPaths = new Set([
   // esbuild config entrypoints are executed directly by Node before package
   // dist output exists.
   "packages/agui-adapter/esbuild.config.mjs",
+  "packages/bundle/esbuild.config.mjs",
   "packages/contracts/esbuild.config.mjs",
   "packages/host/esbuild.config.mjs",
   "packages/platform/esbuild.config.mjs",

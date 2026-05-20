@@ -188,6 +188,9 @@ importers:
 
   apps/packaged:
     dependencies:
+      '@open-design/bundle':
+        specifier: workspace:*
+        version: link:../../packages/bundle
       '@open-design/daemon':
         specifier: workspace:*
         version: link:../daemon
@@ -341,6 +344,21 @@ importers:
       vitest:
         specifier: 4.1.6
         version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@20.19.39)(jsdom@29.1.1)(vite@7.3.3(@types/node@20.19.39)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.2)(yaml@2.9.0))
+
+  packages/bundle:
+    devDependencies:
+      '@types/node':
+        specifier: 24.12.2
+        version: 24.12.2
+      esbuild:
+        specifier: 0.28.0
+        version: 0.28.0
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
+      vitest:
+        specifier: 4.1.6
+        version: 4.1.6(@opentelemetry/api@1.9.1)(@types/node@24.12.2)(jsdom@29.1.1)(vite@7.3.3(@types/node@24.12.2)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.22.2)(yaml@2.9.0))
 
   packages/contracts:
     dependencies:

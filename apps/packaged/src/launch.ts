@@ -100,6 +100,7 @@ export async function ensurePackagedNamespacePaths(
   await Promise.all([
     mkdir(paths.namespaceRoot, { recursive: true }),
     mkdir(paths.cacheRoot, { recursive: true }),
+    mkdir(paths.bundleBasePath, { recursive: true }),
     mkdir(paths.dataRoot, { recursive: true }),
     mkdir(paths.logsRoot, { recursive: true }),
     mkdir(paths.desktopLogsRoot, { recursive: true }),

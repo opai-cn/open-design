@@ -151,6 +151,8 @@ describe('buildPackagedDaemonSpawnEnv', () => {
   // regress either side.
   function fakePaths(): PackagedNamespacePaths {
     return {
+      bundleActivationPath: '/tmp/od-pkg/data/bundle-activation.json',
+      bundleBasePath: '/tmp/od-pkg/data/bundles',
       cacheRoot: '/tmp/od-pkg/cache',
       dataRoot: '/tmp/od-pkg/data',
       desktopIdentityPath: '/tmp/od-pkg/runtime/desktop-root.json',

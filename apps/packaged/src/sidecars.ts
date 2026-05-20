@@ -28,6 +28,11 @@ import {
   wellKnownUserToolchainBins,
 } from "@open-design/platform";
 
+import {
+  resolvePackagedWebSidecarImplementation,
+  sidecarImplementationEnv,
+  type PackagedWebSidecarImplementation,
+} from "./bundle-activation.js";
 import type { PackagedWebOutputMode } from "./config.js";
 import type { PackagedNamespacePaths } from "./paths.js";
 
@@ -57,6 +62,9 @@ function shouldForwardPackagedChildEnv(key: string, includeProviderSecrets = fal
 export type PackagedSidecarHandle = {
   close(): Promise<void>;
   daemon: DaemonStatusSnapshot;
+  implementations: {
+    web: PackagedWebSidecarImplementation["implementation"];
+  };
   web: WebStatusSnapshot;
 };
 
@@ -383,6 +391,7 @@ export async function startPackagedSidecars(
   await mkdir(paths.namespaceRoot, { recursive: true });
   await mkdir(paths.cacheRoot, { recursive: true });
   await mkdir(paths.dataRoot, { recursive: true });
+  await mkdir(paths.bundleBasePath, { recursive: true });
   await mkdir(paths.logsRoot, { recursive: true });
   await mkdir(paths.desktopLogsRoot, { recursive: true });
   await mkdir(paths.runtimeRoot, { recursive: true });
@@ -423,12 +432,17 @@ export async function startPackagedSidecars(
     );
     if (daemonStatus.url == null) throw new Error("daemon did not report a URL");
 
+    const webImplementation = await resolvePackagedWebSidecarImplementation({
+      builtinEntryPath: options.webSidecarEntry,
+      paths,
+    });
     const web = await spawnSidecarChild({
       app: APP_KEYS.WEB,
-      entryPath: options.webSidecarEntry ?? resolveSidecarEntry("@open-design/web", "sidecar"),
+      entryPath: webImplementation.entryPath ?? resolveSidecarEntry("@open-design/web", "sidecar"),
       env: {
         [SIDECAR_ENV.DAEMON_PORT]: extractPort(daemonStatus.url),
         [SIDECAR_ENV.WEB_PORT]: "0",
+        ...sidecarImplementationEnv(webImplementation.implementation),
         ...(options.webStandaloneRoot == null ? {} : { OD_WEB_STANDALONE_ROOT: options.webStandaloneRoot }),
         OD_WEB_OUTPUT_MODE: options.webOutputMode,
         PORT: "0",
@@ -446,6 +460,9 @@ export async function startPackagedSidecars(
 
     return {
       daemon: daemonStatus,
+      implementations: {
+        web: webImplementation.implementation,
+      },
       web: webStatus,
       async close() {
         for (const child of [...children].reverse()) {

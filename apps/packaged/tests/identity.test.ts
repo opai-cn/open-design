@@ -25,6 +25,8 @@ async function pathExists(path: string): Promise<boolean> {
 
 function fakePaths(root: string): PackagedNamespacePaths {
   return {
+    bundleActivationPath: join(root, "data", "bundle-activation.json"),
+    bundleBasePath: join(root, "data", "bundles"),
     cacheRoot: join(root, "cache"),
     dataRoot: join(root, "data"),
     desktopIdentityPath: join(root, "runtime", "desktop-root.json"),

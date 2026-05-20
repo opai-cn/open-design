@@ -52,6 +52,7 @@ function resolveHeadlessConfig(): PackagedConfig {
 
   return {
     appVersion: null,
+    bundleBasePath: null,
     daemonCliEntry: null,
     daemonSidecarEntry: null,
     namespace,

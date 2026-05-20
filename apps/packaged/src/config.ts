@@ -22,6 +22,7 @@ export type PackagedWebOutputMode = "server" | "standalone";
 
 export type RawPackagedConfig = {
   appVersion?: string;
+  bundleBasePath?: string;
   daemonCliEntryRelative?: string;
   daemonSidecarEntryRelative?: string;
   namespace?: string;
@@ -46,6 +47,7 @@ export type RawPackagedConfig = {
 
 export type PackagedConfig = {
   appVersion: string | null;
+  bundleBasePath: string | null;
   daemonCliEntry: string | null;
   daemonSidecarEntry: string | null;
   namespace: string;
@@ -169,6 +171,7 @@ export async function readPackagedConfig(): Promise<PackagedConfig> {
 
   return {
     appVersion: cleanOptionalString(raw.appVersion),
+    bundleBasePath: resolveOptionalPath(raw.bundleBasePath) ?? null,
     daemonCliEntry,
     daemonSidecarEntry,
     namespace,
