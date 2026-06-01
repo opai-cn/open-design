@@ -72,6 +72,7 @@ interface Props {
   isDeck: boolean;
   onExportAsPptx?: ((fileName: string) => void) | undefined;
   streaming?: boolean;
+  commentQueueOnSend?: boolean;
   commentSendDisabled?: boolean;
   openRequest?: { name: string; nonce: number } | null;
   liveArtifactEvents?: LiveArtifactEventItem[];
@@ -208,6 +209,7 @@ export function FileWorkspace({
   isDeck,
   onExportAsPptx,
   streaming,
+  commentQueueOnSend = false,
   commentSendDisabled = false,
   openRequest,
   liveArtifactEvents = [],
@@ -1100,6 +1102,7 @@ export function FileWorkspace({
             isDeck={isDeck}
             onExportAsPptx={onExportAsPptx}
             streaming={streaming}
+            commentQueueOnSend={commentQueueOnSend}
             commentSendDisabled={commentSendDisabled}
             previewComments={previewComments.filter((comment) => comment.filePath === activeFile.name)}
             onSavePreviewComment={onSavePreviewComment}
